@@ -4,7 +4,7 @@ import re
 from collections import defaultdict
 
 def load_data():
-    d1 = pd.read_csv("mail_data.csv")
+    d1 = pd.read_csv(r"Predict_Email_spam_and_phishing\mail_data.csv")
     return d1
 
 def calculate_word_probabilities(word_counts, total_words, vocab_size):
