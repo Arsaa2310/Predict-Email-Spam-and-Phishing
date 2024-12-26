@@ -2,3 +2,4 @@ streamlit
 Flask
 pandas
 numpy
+langdetect
