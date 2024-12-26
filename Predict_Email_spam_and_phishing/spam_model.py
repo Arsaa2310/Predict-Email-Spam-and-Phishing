@@ -2,7 +2,6 @@ import numpy as np
 import pandas as pd
 import re
 from collections import defaultdict
-from sklearn.model_selection import train_test_split
 
 def load_data():
     d1 = pd.read_csv("mail_data.csv")
