@@ -1,7 +1,12 @@
 from collections import defaultdict
 import pandas as pd
 import re
+import os
 import numpy as np
+from collections import defaultdict
+import streamlit as st
+
+st.write("Current Working Directory:", os.getcwd())
 
 def clean_text(text):
     text = re.sub(r'[^a-zA-Z\s]', '', text)
@@ -39,7 +44,8 @@ def preprocessing(msg):
     return msg
 
 def load_data():
-    data2 = pd.read_csv(r'Predict_Email_spam_and_phishing\Phishing_Email.csv', encoding='utf-8', on_bad_lines='skip', engine='python')
+    data2 = pd.read_csv(r'Phishing_Email.csv', encoding='utf-8', on_bad_lines='skip', engine='python')
+    st.write(data2)
 
     data2['Message'] = data2['Email Text'].apply(preprocessing)
 
