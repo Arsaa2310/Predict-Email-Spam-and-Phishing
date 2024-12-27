@@ -41,7 +41,7 @@ if st.button("Login"):
             email_ids = messages[0].split()
             emails = []
 
-            for email_id in email_ids[-25:]:  # Get the latest 25 emails
+            for email_id in email_ids[-10:]:  # Get the latest 10 emails
                 res, msg = mail.fetch(email_id, "(RFC822)")
                 for response in msg:
                     if isinstance(response, tuple):
@@ -55,14 +55,30 @@ if st.button("Login"):
                                 subject = subject.decode("utf-8", errors="replace")
                                 continue
 
+                        # Try to extract the email content (body)
+                        body = ""
+                        if msg.is_multipart():
+                            for part in msg.walk():
+                                content_type = part.get_content_type()
+                                content_disposition = str(part.get("Content-Disposition"))
+
+                                if "attachment" not in content_disposition:
+                                    if content_type == "text/plain":
+                                        body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
+                                    elif content_type == "text/html":
+                                        body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
+                        else:
+                            body = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
+
                         try:
                             language = detect(subject)
                             if language == "en":
-                                phishing_label = phishing_model.predict_message(subject)
-                                spam_label = spam_model.predict_message(subject)
+                                phishing_label = phishing_model.predict_message(body)
+                                spam_label = spam_model.predict_message(body)
 
                                 emails.append({
                                     "subject": subject,
+                                    "body": body,
                                     "language": language,
                                     "phishing_label": "Phishing" if phishing_label == 1 else "Safe",
                                     "spam_label": "Spam" if spam_label == 1 else "Ham",
@@ -80,6 +96,7 @@ if st.button("Login"):
                 st.write(f"**Language:** {email_data['language']}")
                 st.write(f"**Phishing Detection:** {email_data['phishing_label']}")
                 st.write(f"**Spam Detection:** {email_data['spam_label']}")
+                st.write(f"**Body:** {email_data['body'][:500]}...")  # Displaying the first 500 chars of email body
                 st.markdown("---")
         except imaplib.IMAP4.error:
             st.error("Invalid email or password. Please try again.")
