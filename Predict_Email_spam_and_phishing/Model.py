@@ -108,7 +108,6 @@ class PhishingModel:
         return 1 if phishing_prob > 0 else 0
 
 
-
 class SpamModel:
     def __init__(self, data_file=r'/mount/src/predict-email-spam-and-phishing/Predict_Email_spam_and_phishing/mail_data.csv'):
         self.data_file = data_file
