@@ -92,17 +92,21 @@ class PhishingModel:
         return (self.phishing_word_probs, self.safe_word_probs, self.p_phishing_train, self.p_safe_train, self.vocabulary, total_phishing_words, total_safe_words, self.vocab_size)
 
     def predict_message(self, message):
-        message = self.preprocessing(message)
+        phishing_prob = 0
+        # Pisahkan pesan menjadi kata-kata
         words = message.split()
 
-        phishing_prob = np.log(self.p_phishing_train)
-        safe_prob = np.log(self.p_safe_train)
-
         for word in words:
-            phishing_prob += np.log(self.phishing_word_probs.get(word, 1 / (self.total_phishing_words + self.vocab_size)))
-            safe_prob += np.log(self.safe_word_probs.get(word, 1 / (self.total_safe_words + self.vocab_size)))
+            # Mengambil probabilitas kata untuk phishing, jika tidak ada, gunakan nilai default
+            word_prob = self.phishing_word_probs.get(word, None)
+            if word_prob is None:
+                # Jika kata tidak ditemukan, gunakan probabilitas default berdasarkan ukuran kosakata
+                word_prob = 1 / (self.total_phishing_words + self.vocab_size)
+            phishing_prob += np.log(word_prob)
 
-        return 1 if phishing_prob > safe_prob else 0
+        # Mengembalikan label phishing (1 untuk phishing, 0 untuk aman)
+        return 1 if phishing_prob > 0 else 0
+
 
 
 class SpamModel:
