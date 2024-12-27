@@ -2,26 +2,20 @@ import streamlit as st
 import imaplib
 import email
 from email.header import decode_header
-from langdetect import detect, LangDetectException
+import pandas as pd
 from Model import PhishingModel, SpamModel
 
-# LangDetect Configuration
-from langdetect import DetectorFactory
-DetectorFactory.seed = 0
-
-# Load Models
-st.sidebar.header("Model Loading")
+# Initialize models
 phishing_model = PhishingModel()
 phishing_data = phishing_model.load_data()
-phishing_model.train_model(phishing_data)  # Training model and saving parameters inside class
+phishing_model.train_model(phishing_data)
 
 spam_model = SpamModel()
 spam_data = spam_model.load_data()
-spam_model.train_model(spam_data)  # Training model and saving parameters inside class
+spam_model.train_model(spam_data)
 
 # Streamlit UI
 st.title("Email Classification: Phishing and Spam Detection")
-st.sidebar.title("Navigation")
 
 # Login Section
 st.header("Login to Your Email")
@@ -31,74 +25,73 @@ password = st.text_input("Password", placeholder="Enter your password", type="pa
 if st.button("Login"):
     if email_address and password:
         try:
+            # Connect to Gmail
             mail = imaplib.IMAP4_SSL("imap.gmail.com")
             mail.login(email_address, password)
             st.success("Login successful!")
+            
+            # Select inbox
             mail.select("inbox")
-
-            # Fetch Emails
-            status, messages = mail.search(None, "ALL")
+            
+            # Search for emails
+            _, messages = mail.search(None, "ALL")
             email_ids = messages[0].split()
-            emails = []
-
-            for email_id in email_ids[-10:]:  # Get the latest 10 emails
-                res, msg = mail.fetch(email_id, "(RFC822)")
-                for response in msg:
-                    if isinstance(response, tuple):
-                        msg = email.message_from_bytes(response[1])
-                        subject, encoding = decode_header(msg["Subject"])[0]
-
-                        if isinstance(subject, bytes):
+            
+            # Create a list to store email data
+            email_data = []
+            
+            # Get the last 10 emails
+            for email_id in email_ids[-10:]:
+                _, msg = mail.fetch(email_id, "(RFC822)")
+                email_message = email.message_from_bytes(msg[0][1])
+                
+                # Get subject
+                subject, encoding = decode_header(email_message["Subject"])[0]
+                if isinstance(subject, bytes):
+                    subject = subject.decode(encoding if encoding else 'utf-8', errors='replace')
+                
+                # Get body
+                if email_message.is_multipart():
+                    body = ''
+                    for part in email_message.walk():
+                        if part.get_content_type() == "text/plain":
                             try:
-                                subject = subject.decode(encoding if encoding else "utf-8")
-                            except (UnicodeDecodeError, LookupError) as e:
-                                subject = subject.decode("utf-8", errors="replace")
+                                body = part.get_payload(decode=True).decode()
+                                break
+                            except:
                                 continue
-
-                        # Try to extract the email content (body)
-                        body = ""
-                        if msg.is_multipart():
-                            for part in msg.walk():
-                                content_type = part.get_content_type()
-                                content_disposition = str(part.get("Content-Disposition"))
-
-                                if "attachment" not in content_disposition:
-                                    if content_type == "text/plain":
-                                        body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
-                                    elif content_type == "text/html":
-                                        body = part.get_payload(decode=True).decode("utf-8", errors="ignore")
-                        else:
-                            body = msg.get_payload(decode=True).decode("utf-8", errors="ignore")
-
-                        try:
-                            language = detect(subject)
-                            if language == "en":
-                                phishing_label = phishing_model.predict_message(body)
-                                spam_label = spam_model.predict_message(body)
-
-                                emails.append({
-                                    "subject": subject,
-                                    "body": body,
-                                    "language": language,
-                                    "phishing_label": "Phishing" if phishing_label == 1 else "Safe",
-                                    "spam_label": "Spam" if spam_label == 1 else "Ham",
-                                })
-                        except LangDetectException:
-                            continue
-
+                else:
+                    try:
+                        body = email_message.get_payload(decode=True).decode()
+                    except:
+                        body = "Could not decode email body"
+                
+                # Make predictions
+                try:
+                    phishing_prediction = phishing_model.predict_message(body)
+                    spam_prediction = spam_model.predict_message(body)
+                except Exception as e:
+                    st.error(f"Error in prediction: {str(e)}")
+                    phishing_prediction = None
+                    spam_prediction = None
+                
+                # Add to email data
+                email_data.append({
+                    'Subject': subject,
+                    'Body': body[:200] + "...",  # Show first 200 characters
+                    'Phishing': "Phishing" if phishing_prediction == 1 else "Safe",
+                    'Spam': "Spam" if spam_prediction == 1 else "Ham"
+                })
+            
+            # Create and display DataFrame
+            df = pd.DataFrame(email_data)
+            st.dataframe(df)
+            
+            # Logout
             mail.close()
             mail.logout()
-
-            # Display Emails
-            st.subheader("Inbox")
-            for email_data in emails:
-                st.write(f"**Subject:** {email_data['subject']}")
-                st.write(f"**Language:** {email_data['language']}")
-                st.write(f"**Phishing Detection:** {email_data['phishing_label']}")
-                st.write(f"**Spam Detection:** {email_data['spam_label']}")
-                st.write(f"**Body:** {email_data['body'][:500]}...")  # Displaying the first 500 chars of email body
-                st.markdown("---")
-        except imaplib.IMAP4.error:
-            st.error("Invalid email or password. Please try again.")
+            
+        except imaplib.IMAP4.error as e:
+            st.error(f"Login failed: {str(e)}")
     else:
         st.warning("Please enter both email and password.")
