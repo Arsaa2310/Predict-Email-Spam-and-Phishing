@@ -3,13 +3,9 @@ import pandas as pd
 import re
 import os
 from collections import defaultdict
-import streamlit as st
-
-st.write("Current Working Directory:", os.getcwd())
 
 def load_data():
     d1 = pd.read_csv(r"/mount/src/predict-email-spam-and-phishing/mail_data.csv")
-    st.write(d1)
     return d1
 
 def calculate_word_probabilities(word_counts, total_words, vocab_size):

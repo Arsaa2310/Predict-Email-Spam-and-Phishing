@@ -3,8 +3,7 @@ import imaplib
 import email
 from email.header import decode_header
 from langdetect import detect, LangDetectException
-from phising_model import load_data as load_phishing_data, train_model as train_phishing_model, predict_message as predict_phishing_message
-from spam_model import load_data as load_spam_data, train_model as train_spam_model, predict_message as predict_spam_message
+from Model import PhishingModel, SpamModel
 
 # LangDetect Configuration
 from langdetect import DetectorFactory
@@ -12,11 +11,13 @@ DetectorFactory.seed = 0
 
 # Load Models
 st.sidebar.header("Model Loading")
-phishing_data = load_phishing_data()
-phishing_word_probs, phishing_safe_word_probs, p_phishing_train, p_safe_train, phishing_vocabulary, total_phishing_words, total_safe_words, phishing_vocab_size = train_phishing_model(phishing_data)
+phishing_model = PhishingModel()
+phishing_data = phishing_model.load_data()
+phishing_model.train_model(phishing_data)  # Training model and saving parameters inside class
 
-spam_data = load_spam_data()
-spam_word_probs, spam_ham_word_probs, p_spam_train, p_ham_train, spam_vocabulary, total_spam_words, total_ham_words, spam_vocab_size = train_spam_model(spam_data)
+spam_model = SpamModel()
+spam_data = spam_model.load_data()
+spam_model.train_model(spam_data)  # Training model and saving parameters inside class
 
 # Streamlit UI
 st.title("Email Classification: Phishing and Spam Detection")
@@ -57,28 +58,8 @@ if st.button("Login"):
                         try:
                             language = detect(subject)
                             if language == "en":
-                                phishing_label = predict_phishing_message(
-                                    subject,
-                                    phishing_word_probs,
-                                    phishing_safe_word_probs,
-                                    p_phishing_train,
-                                    p_safe_train,
-                                    phishing_vocabulary,
-                                    total_phishing_words,
-                                    total_safe_words,
-                                    phishing_vocab_size,
-                                )
-                                spam_label = predict_spam_message(
-                                    subject,
-                                    spam_word_probs,
-                                    spam_ham_word_probs,
-                                    p_spam_train,
-                                    p_ham_train,
-                                    spam_vocabulary,
-                                    total_spam_words,
-                                    total_ham_words,
-                                    spam_vocab_size,
-                                )
+                                phishing_label = phishing_model.predict_message(subject)
+                                spam_label = spam_model.predict_message(subject)
 
                                 emails.append({
                                     "subject": subject,
