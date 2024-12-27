@@ -44,7 +44,7 @@ def preprocessing(msg):
     return msg
 
 def load_data():
-    data2 = pd.read_csv('Phishing_Email.csv', encoding='utf-8', on_bad_lines='skip', engine='python')
+    data2 = pd.read_csv(r'/mount/src/predict-email-spam-and-phishing/Phishing_Email.csv', encoding='utf-8', on_bad_lines='skip', engine='python')
     st.write(data2)
 
     data2['Message'] = data2['Email Text'].apply(preprocessing)
