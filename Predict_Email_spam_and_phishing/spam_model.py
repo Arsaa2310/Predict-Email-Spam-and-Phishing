@@ -8,7 +8,7 @@ import streamlit as st
 st.write("Current Working Directory:", os.getcwd())
 
 def load_data():
-    d1 = pd.read_csv(r"C:\Users\Arsa\OneDrive\Documents\GitHub\Predict-Email-Spam-and-Phishing\Predict_Email_spam_and_phishing\mail_data.csv")
+    d1 = pd.read_csv("mail_data.csv")
     st.write(d1)
     return d1
 
