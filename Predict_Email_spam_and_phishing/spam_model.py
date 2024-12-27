@@ -8,7 +8,7 @@ import streamlit as st
 st.write("Current Working Directory:", os.getcwd())
 
 def load_data():
-    d1 = pd.read_csv(r"/mount/src/predict-email-spam-and-phishing/mail_data.csv")
+    d1 = pd.read_csv(r"C:\Users\Arsa\OneDrive\Documents\GitHub\Predict-Email-Spam-and-Phishing\Predict_Email_spam_and_phishing\mail_data.csv")
     st.write(d1)
     return d1
 
@@ -20,6 +20,9 @@ def calculate_word_probabilities(word_counts, total_words, vocab_size):
     return probabilities
 
 def train_model(d1):
+    # Bersihkan data kolom 'Message' terlebih dahulu
+    d1['Message'] = d1['Message'].fillna("").astype(str)
+
     spam_messages = d1[d1['Category'] == 1]['Message']
     ham_messages = d1[d1['Category'] == 0]['Message']
 
@@ -29,6 +32,7 @@ def train_model(d1):
     total_spam_words = 0
     total_ham_words = 0
 
+    # Hitung frekuensi kata untuk spam dan ham
     for message in spam_messages:
         for word in message.split():
             spam_word_counts[word] += 1
@@ -39,6 +43,7 @@ def train_model(d1):
             ham_word_counts[word] += 1
             total_ham_words += 1
 
+    # Perhatikan bahwa vocabulary hanya dibuat setelah data bersih
     vocabulary = set(" ".join(d1['Message']).split())
     vocab_size = len(vocabulary)
 
@@ -49,6 +54,7 @@ def train_model(d1):
     p_ham_train = len(ham_messages) / len(d1)
 
     return spam_word_probs, ham_word_probs, p_spam_train, p_ham_train, vocabulary, total_spam_words, total_ham_words, vocab_size
+
 
 def preprocess_message(message):
     message = message.lower()
