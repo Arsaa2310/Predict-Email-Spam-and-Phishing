@@ -4,7 +4,7 @@ import numpy as np
 from collections import defaultdict
 
 class PhishingModel:
-    def __init__(self, data_file=r'Phishing_Email.csv'):
+    def __init__(self, data_file=r'/mount/src/predict-email-spam-and-phishing/Predict_Email_spam_and_phishing/Phishing_Email.csv'):
         self.data_file = data_file
         self.phishing_word_probs = None
         self.safe_word_probs = None
@@ -106,7 +106,7 @@ class PhishingModel:
 
 
 class SpamModel:
-    def __init__(self, data_file=r'mail_data.csv'):
+    def __init__(self, data_file=r'/mount/src/predict-email-spam-and-phishing/Predict_Email_spam_and_phishing/mail_data.csv'):
         self.data_file = data_file
         self.spam_word_probs = None
         self.ham_word_probs = None
