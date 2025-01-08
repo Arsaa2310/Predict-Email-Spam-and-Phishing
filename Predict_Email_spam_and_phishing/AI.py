@@ -3,6 +3,7 @@ import imaplib
 import email
 from email.header import decode_header
 import pandas as pd
+from langdetect import detect, LangDetectException
 from Model import PhishingModel, SpamModel
 
 # Initialize models
@@ -14,8 +15,14 @@ spam_model = SpamModel()
 spam_data = spam_model.load_data()
 spam_model.train_model(spam_data)
 
+def is_english(text):
+    try:
+        return detect(text) == 'en'
+    except LangDetectException:
+        return False
+
 # Streamlit UI
-st.title("Email Classification: Phishing and Spam Detection")
+st.title("Email Classification: English Email Phishing and Spam Detection")
 
 # Login Section
 st.header("Login to Your Email")
@@ -40,8 +47,21 @@ if st.button("Login"):
             # Create a list to store email data
             email_data = []
             
-            # Get the last 10 emails
-            for email_id in email_ids[-10:]:
+            # Progress bar
+            progress_bar = st.progress(0)
+            status_text = st.empty()
+            
+            # Get the last 50 emails (increased from 10 to ensure we get enough English emails)
+            total_emails = min(50, len(email_ids))
+            processed_emails = 0
+            english_emails = 0
+            
+            for email_id in email_ids[-total_emails:]:
+                processed_emails += 1
+                progress = processed_emails / total_emails
+                progress_bar.progress(progress)
+                status_text.text(f"Processing email {processed_emails}/{total_emails}")
+                
                 _, msg = mail.fetch(email_id, "(RFC822)")
                 email_message = email.message_from_bytes(msg[0][1])
                 
@@ -66,26 +86,39 @@ if st.button("Login"):
                     except:
                         body = "Could not decode email body"
                 
-                # Make predictions
-                try:
-                    phishing_prediction = phishing_model.predict_message(body)
-                    spam_prediction = spam_model.predict_message(body)
-                except Exception as e:
-                    st.error(f"Error in prediction: {str(e)}")
-                    phishing_prediction = None
-                    spam_prediction = None
-                
-                # Add to email data
-                email_data.append({
-                    'Subject': subject,
-                    'Body': body[:200] + "...",  # Show first 200 characters
-                    'Phishing': "Phishing" if phishing_prediction == 1 else "Safe",
-                    'Spam': "Spam" if spam_prediction == 1 else "Ham"
-                })
+                # Check if the email is in English
+                if body and is_english(body):
+                    english_emails += 1
+                    # Make predictions
+                    try:
+                        phishing_prediction = phishing_model.predict_message(body)
+                        spam_prediction = spam_model.predict_message(body)
+                    except Exception as e:
+                        st.error(f"Error in prediction: {str(e)}")
+                        phishing_prediction = None
+                        spam_prediction = None
+                    
+                    # Add to email data
+                    email_data.append({
+                        'Subject': subject,
+                        'Body': body[:200] + "...",  # Show first 200 characters
+                        'Phishing': "Phishing" if phishing_prediction == 1 else "Safe",
+                        'Spam': "Spam" if spam_prediction == 1 else "Ham"
+                    })
             
-            # Create and display DataFrame
-            df = pd.DataFrame(email_data)
-            st.dataframe(df)
+            # Remove progress bar and status text
+            progress_bar.empty()
+            status_text.empty()
+            
+            # Display results
+            st.write(f"Found {english_emails} English emails out of {processed_emails} processed emails")
+            
+            if email_data:
+                # Create and display DataFrame
+                df = pd.DataFrame(email_data)
+                st.dataframe(df)
+            else:
+                st.warning("No English emails found in the processed messages")
             
             # Logout
             mail.close()
