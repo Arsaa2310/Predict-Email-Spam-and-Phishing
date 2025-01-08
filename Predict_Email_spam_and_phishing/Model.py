@@ -31,13 +31,9 @@ class PhishingModel(BaseModel):
 
     def load_data(self):
         # Sample data for demonstration - replace with your actual data path
-        data = {
-            'Email Text': ['Free money click here', 'Meeting tomorrow at 2pm', 'Verify your account now'],
-            'Email Type': ['Phishing Email', 'Safe Email', 'Phishing Email']
-        }
-        data = pd.DataFrame(data)
-        data['Message'] = data['Email Text'].apply(self.preprocess_message)
-        data['Phishing'] = data['Email Type'].map({'Phishing Email': 1, 'Safe Email': 0})
+        data = 'Phising after prprocesiing.csv'
+        data = pd.read_csv(data)
+        data['Message'] = data['Message'].apply(self.preprocess_message)
         return data
 
     def train_model(self, data):
@@ -96,17 +92,14 @@ class SpamModel(BaseModel):
 
     def load_data(self):
         # Sample data for demonstration - replace with your actual data path
-        data = {
-            'Message': ['Buy now limited offer', 'Team meeting notes', 'Win free iPhone'],
-            'Category': [1, 0, 1]  # 1 for spam, 0 for ham
-        }
-        return pd.DataFrame(data)
+        data = 'Spam after preprocessing.csv'
+        return pd.read_csv(data)
 
     def train_model(self, data):
         data['Message'] = data['Message'].fillna("").astype(str)
 
-        spam_messages = data[data['Category'] == 1]['Message']
-        ham_messages = data[data['Category'] == 0]['Message']
+        spam_messages = data[data['Spam'] == 1]['Message']
+        ham_messages = data[data['Spam'] == 0]['Message']
 
         spam_word_counts = defaultdict(int)
         ham_word_counts = defaultdict(int)
